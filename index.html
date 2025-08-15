@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DAFTAR KEHADIRAN GERAKAN PEMUDA</title>
+  <style>
+    :root{
+      --bg1:#0a45a6;
+      --bg2:#082a80;
+      --glass-border: rgba(255,255,255,0.22);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:#0f172a}
+    body{
+      background:
+        radial-gradient(1000px 700px at 10% -10%, #5cc8ff44, transparent 45%),
+        radial-gradient(1300px 800px at 120% 0%, #4e7bff33, transparent 40%),
+        linear-gradient(120deg, var(--bg1), var(--bg2));
+      min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:26px;
+    }
+    .container{ width:min(1100px,100%); display:grid; grid-template-columns:1.1fr 1.6fr; gap:20px }
+    .card{
+      background: linear-gradient(145deg, rgba(255,255,255,0.52), rgba(255,255,255,0.26));
+      border:1px solid var(--glass-border);
+      border-radius:22px;
+      backdrop-filter: blur(30px) saturate(150%);
+      -webkit-backdrop-filter: blur(30px) saturate(150%);
+      box-shadow: 0 20px 60px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.65);
+      padding:20px;
+    }
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:56px;height:56px;object-fit:contain;border-radius:50%;background:#fff9;padding:6px;border:1px solid var(--glass-border)}
+    h1{margin:0;font-size:clamp(22px,2.5vw,32px)}
+    .subtitle{opacity:.75}
+    label{display:block;font-weight:600;margin:14px 0 6px}
+    input,select,button{font-size:16px}
+    input,select{
+      width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--glass-border);
+      background:rgba(255,255,255,.9);outline:none;transition:box-shadow .2s,border-color .2s
+    }
+    input:focus,select:focus{box-shadow:0 0 0 4px rgba(14,165,233,.25);border-color:#38bdf8}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--glass-border);background:#fff;font-weight:700;cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8);color:#fff;border-color:#1e40af}
+    .btn.warn{background:linear-gradient(180deg,#ef4444,#b91c1c);color:#fff;border-color:#7f1d1d}
+    .badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#dcfce7;border:1px solid #86efac}
+    .badge.error{background:#fee2e2;border-color:#fecaca}
+    .note{background:#fff8;border:1px dashed var(--glass-border);border-radius:14px;padding:12px;font-size:14px;margin-top:8px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--glass-border);border-radius:999px;padding:8px 12px}
+    .table-wrap{max-height:64vh;overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    thead th{text-align:left;padding:10px 12px;font-size:13px;opacity:.8}
+    tbody tr{background:#fff;border:1px solid var(--glass-border);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+    tbody td{padding:12px;border-top:1px solid var(--glass-border)}
+    tbody tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
+    tbody tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,.5);display:none;align-items:center;justify-content:center;padding:18px}
+    .panel{width:min(460px,96%);background:#fff;border-radius:16px;padding:16px;border:1px solid #e2e8f0}
+    .panel h3{margin:0 0 10px}
+    .footer{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+    .debug{margin-top:8px;font-size:12px;color:#334155}
+    @media(max-width:900px){.container{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="card">
+      <div class="toolbar">
+        <div class="brand">
+          <img src="assets/logo.webp" alt="Logo GP">
+          <div>
+            <h1>DAFTAR KEHADIRAN GERAKAN PEMUDA</h1>
+            <div class="subtitle">Liquid glass • Gradient biru gelap • Sinkron otomatis</div>
+          </div>
+        </div>
+        <div>
+          <span id="apiBadge" class="badge">API belum diatur</span>
+          <button class="btn" id="btnSettings">⚙️</button>
+        </div>
+      </div>
+
+      <form id="form" autocomplete="off">
+        <label for="nama">Nama Lengkap *</label>
+        <input id="nama" required placeholder="contoh: Kevin Wang">
+
+        <div class="row">
+          <div>
+            <label for="status">Status Jemaat *</label>
+            <select id="status" required>
+              <option value="" disabled selected>Pilih status...</option>
+              <option value="KATEKUMEN">KATEKUMEN</option>
+              <option value="SIDI JEMAAT">SIDI JEMAAT</option>
+              <option value="PARTISIPAN">PARTISIPAN</option>
+            </select>
+          </div>
+          <div>
+            <label for="sektor">Nama Sektor <span id="sektorHint" class="subtitle">(wajib kecuali Partisipan)</span></label>
+            <select id="sektor">
+              <option value="" disabled selected>Pilih sektor...</option>
+              <option>ANTIOKHIA</option>
+              <option>BETLEHEM</option>
+              <option>CORINTHIANS</option>
+              <option>DAMSYIK</option>
+              <option>EFRATA</option>
+              <option>FILIPI</option>
+              <option>GALILEA</option>
+              <option>HERMON</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="submit">Simpan Kehadiran</button>
+          <button class="btn" type="button" id="btnResetForm">Reset Form</button>
+          <button class="btn warn" type="button" id="btnResetData">🧹 Reset Data</button>
+        </div>
+
+        <div class="note">
+          <b>Catatan:</b> Semua kolom wajib diisi. Jika memilih <b>PARTISIPAN</b>, kolom <b>Sektor</b> otomatis nonaktif.
+        </div>
+        <div class="debug" id="debug"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="toolbar">
+        <div><b>Data Kehadiran</b> • <span id="lastSync" class="subtitle"></span></div>
+        <div>
+          <button class="btn" id="btnRefresh">Refresh</button>
+          <button class="btn" id="btnExport">Export Excel</button>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Timestamp (WIB)</th><th>Nama</th><th>Status</th><th>Sektor</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="modalSettings">
+    <div class="panel">
+      <h3>Pengaturan Koneksi</h3>
+      <label>URL Web App (Apps Script)</label>
+      <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+      <div class="footer">
+        <button class="btn" id="btnTest">Tes</button>
+        <button class="btn primary" id="btnSave">Simpan</button>
+        <button class="btn" id="btnClose">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Reset Modal -->
+  <div class="modal" id="modalPwd">
+    <div class="panel">
+      <h3>Konfirmasi Reset</h3>
+      <p>Masukkan password untuk menghapus <b>semua</b> data kehadiran.</p>
+      <input id="pwdInput" type="password" placeholder="Password reset">
+      <div class="footer">
+        <button class="btn" id="btnCancelPwd">Batal</button>
+        <button class="btn warn" id="btnConfirmPwd">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script>
+    // ===== Utilities
+    const LS_KEY = 'attendance_api_url';
+    const $ = id => document.getElementById(id);
+    const debug = msg => { const el=$('debug'); if(!el) return; el.textContent = msg || ''; };
+
+    // ===== Config loader (so users don't need to set API)
+    let READ_ONLY_API = false;
+    function setApiAndPersist(url, source='manual'){
+      if(!url) return;
+      localStorage.setItem(LS_KEY, url);
+      updateBadge(source);
+    }
+    function updateBadge(source){
+      const badge = $('apiBadge');
+      const url = apiUrl();
+      if(url){
+        const short = url.replace(/^https?:\/\//,'').slice(0,30)+(url.length>30?'…':'');
+        const srcNote = (READ_ONLY_API ? ' (config)' : (source==='query' ? ' (url)' : ''));
+        badge.textContent = 'API aktif: '+short+srcNote;
+        badge.classList.remove('error');
+        if(READ_ONLY_API){ const btn=document.getElementById('btnSettings'); if(btn) btn.style.display='none'; }
+      } else {
+        badge.textContent='API belum diatur'; badge.classList.add('error');
+      }
+    }
+    async function loadConfig(){
+      // 1) URL param ?api=... overrides (useful for testing)
+      try{
+        const qp = new URLSearchParams(location.search);
+        const qpApi = qp.get('api');
+        if(qpApi){ setApiAndPersist(qpApi, 'query'); return; }
+      }catch(e){}
+
+      // 2) config.json file
+      try{
+        const res = await fetch('config.json', { cache: 'no-store' });
+        if(res.ok){
+          const cfg = await res.json();
+          if(cfg && cfg.api_url){
+            READ_ONLY_API = true;
+            setApiAndPersist(cfg.api_url, 'config');
+          }
+        }
+      }catch(e){ /* ignore if no config */ }
+    }
+
+    function apiUrl(){ return localStorage.getItem(LS_KEY) || ''; }
+    function setApiUrl(v){ localStorage.setItem(LS_KEY, v); updateBadge(); }
+
+    // ===== Settings modal
+    const ms = $('modalSettings');
+    $('btnSettings').onclick = ()=>{ $('apiUrlInput').value=apiUrl(); ms.style.display='flex'; };
+    $('btnClose').onclick = ()=> ms.style.display='none';
+    $('btnSave').onclick = ()=>{ setApiUrl($('apiUrlInput').value.trim()); ms.style.display='none'; fetchAndRender(); };
+    $('btnTest').onclick = async()=>{
+      const url = $('apiUrlInput').value.trim() || apiUrl(); if(!url) return alert('Tempel URL Web App dulu.');
+      try{ const r = await fetch(url+'?ping=1'); alert(r.ok?'Koneksi OK ✅':'Gagal: '+r.status); }catch(e){ alert('Gagal: '+e.message); }
+    };
+
+    // ===== Password modal
+    const mp = $('modalPwd');
+    $('btnResetData').onclick = ()=>{ mp.style.display='flex'; $('pwdInput').value=''; $('pwdInput').focus(); };
+    $('btnCancelPwd').onclick = ()=> mp.style.display='none';
+    $('btnConfirmPwd').onclick = async ()=>{
+      const url = apiUrl(); if(!url) return alert('Atur URL Web App dulu.');
+      try{
+        const pwd = $('pwdInput').value;
+        const res = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'reset', password: pwd }) });
+        const data = await res.json();
+        if(data.ok){ mp.style.display='none'; alert('Semua data berhasil direset.'); fetchAndRender(true); }
+        else{ alert(data.error || 'Gagal reset.'); }
+      }catch(e){ alert('Gagal reset: '+e.message); }
+    };
+
+    // ===== Form logic
+    const statusSel = $('status');
+    const sektorSel = $('sektor');
+    const sektorHint = $('sektorHint');
+    function applySektorRule(){
+      const isPart = statusSel.value === 'PARTISIPAN';
+      sektorSel.disabled = isPart;
+      if(isPart){ sektorSel.value=''; sektorSel.removeAttribute('required'); sektorHint.textContent='(nonaktif untuk Partisipan)'; }
+      else{ sektorSel.setAttribute('required','required'); sektorHint.textContent='(wajib kecuali Partisipan)'; }
+    }
+    statusSel.addEventListener('change', applySektorRule);
+    applySektorRule();
+
+    $('btnResetForm').onclick = ()=>{ $('form').reset(); applySektorRule(); };
+
+    // ===== Networking
+    async function getRows(){
+      const url = apiUrl(); if(!url) return [];
+      const res = await fetch(url + '?t=' + Date.now(), { method:'GET' });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.rows || []);
+    }
+    async function submitRow(payload){
+      const url = apiUrl();
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+      return res.json();
+    }
+
+    // ===== Render
+    const tbody = $('tbody');
+    const stats = $('stats');
+    const lastSync = $('lastSync');
+
+    function clearTable(){ tbody.innerHTML=''; }
+    function appendRows(rows){
+      for(const r of rows){
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${r.timestamp||''}</td><td>${r.nama||''}</td><td>${r.status||''}</td><td>${r.sektor||''}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+    function updateStats(){
+      const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{
+        const t=tr.querySelectorAll('td');
+        return {timestamp:t[0].textContent, nama:t[1].textContent, status:t[2].textContent, sektor:t[3].textContent};
+      });
+      const total = rows.length;
+      const c = { 'KATEKUMEN':0, 'SIDI JEMAAT':0, 'PARTISIPAN':0 };
+      rows.forEach(r=>{ if(c[r.status]!==undefined) c[r.status]++; });
+      stats.innerHTML = `
+        <span class="pill">Total Hadir: <b>${total}</b></span>
+        <span class="pill">Katekumen: <b>${c['KATEKUMEN']}</b></span>
+        <span class="pill">Sidi Jemaat: <b>${c['SIDI JEMAAT']}</b></span>
+        <span class="pill">Partisipan: <b>${c['PARTISIPAN']}</b></span>`;
+      lastSync.textContent = new Date().toLocaleTimeString('id-ID');
+      window.__rowsCache = rows;
+    }
+
+    async function fetchAndRender(silent=false){
+      try{
+        const rows = await getRows();
+        clearTable(); appendRows(rows); updateStats();
+        if(!silent) debug('Data tersinkron.');
+      }catch(e){ debug('Gagal memuat: '+e.message); }
+    }
+
+    // ===== Submit handler
+    document.getElementById('form').addEventListener('submit', async (e)=>{
+      e.preventDefault(); if(!apiUrl()) return alert('Atur URL Web App dulu.');
+      const payload = {
+        nama: document.getElementById('nama').value.trim(),
+        status: statusSel.value,
+        sektor: statusSel.value==='PARTISIPAN' ? '' : sektorSel.value
+      };
+      if(!payload.nama || !payload.status || (payload.status!=='PARTISIPAN' && !payload.sektor)){
+        return alert('Lengkapi semua kolom.');
+      }
+      const res = await submitRow(payload);
+      if(res && res.ok){
+        appendRows([res.row]); updateStats();
+        document.getElementById('form').reset(); applySektorRule();
+        setTimeout(()=>fetchAndRender(true), 300);
+      }else{
+        alert((res && res.error) || 'Gagal menyimpan.');
+      }
+    });
+
+    document.getElementById('btnRefresh').onclick = ()=>fetchAndRender();
+
+    // ===== Export Excel
+    document.getElementById('btnExport').onclick = async ()=>{
+      const rows = window.__rowsCache || [];
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Kehadiran');
+      ws.columns = [
+        { header:'Timestamp (WIB)', key:'timestamp', width:22 },
+        { header:'Nama Lengkap', key:'nama', width:28 },
+        { header:'Status Jemaat', key:'status', width:18 },
+        { header:'Nama Sektor', key:'sektor', width:18 },
+      ];
+      ws.getRow(1).font={bold:true}; ws.views=[{state:'frozen',ySplit:1}]; ws.autoFilter='A1:D1';
+      rows.forEach(r=>ws.addRow(r));
+      const totals = rows.reduce((a,r)=>{ a.total++; a[r.status]=(a[r.status]||0)+1; return a; }, { total:0 });
+      ws.addRow([]);
+      ws.addRow(['','','Total Hadir', totals.total||0]).font={bold:true};
+      ws.addRow(['','','Katekumen', totals['KATEKUMEN']||0]);
+      ws.addRow(['','','Sidi Jemaat', totals['SIDI JEMAAT']||0]);
+      ws.addRow(['','','Partisipan', totals['PARTISIPAN']||0]);
+      const s = wb.addWorksheet('Ringkasan');
+      s.addRow(['Ringkasan Kehadiran']).font={bold:true,size:13};
+      s.addRow(['Total Hadir', totals.total||0]);
+      s.addRow(['Katekumen', totals['KATEKUMEN']||0]);
+      s.addRow(['Sidi Jemaat', totals['SIDI JEMAAT']||0]);
+      s.addRow(['Partisipan', totals['PARTISIPAN']||0]);
+      s.columns=[{width:24},{width:16}];
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Kehadiran_GP.xlsx');
+    };
+
+    // ===== Init
+    loadConfig().then(()=>{
+      fetchAndRender(true);
+      setInterval(fetchAndRender, 7000);
+    });
+  </script>
+</body>
+</html>
