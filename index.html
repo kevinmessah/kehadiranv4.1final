@@ -41,7 +41,7 @@
       background:rgba(255,255,255,.9);outline:none;transition:box-shadow .2s,border-color .2s
     }
     input:focus,select:focus{box-shadow:0 0 0 4px rgba(14,165,233,.25);border-color:#38bdf8}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--glass-border);background:#fff;font-weight:700;cursor:pointer}
     .btn.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8);color:#fff;border-color:#1e40af}
@@ -65,6 +65,13 @@
     .footer{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
     .debug{margin-top:8px;font-size:12px;color:#334155}
     @media(max-width:900px){.container{grid-template-columns:1fr}}
+
+    /* Loader overlay */
+    .loader{position:fixed;inset:0;background:rgba(29,78,216,.20);display:none;align-items:center;justify-content:center;z-index:9999}
+    .loader .box{display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:18px 22px;border-radius:16px;box-shadow:0 20px 50px rgba(2,6,23,.25)}
+    .loader .logo{width:64px;height:64px;animation:spin 1s linear infinite;object-fit:contain;border-radius:50%;background:#fff;padding:6px;border:1px solid rgba(0,0,0,.06)}
+    .loader .txt{font-weight:700;color:#1e3a8a}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -75,7 +82,6 @@
           <img src="assets/logo.webp" alt="Logo GP">
           <div>
             <h1>DAFTAR KEHADIRAN GERAKAN PEMUDA</h1>
-            <div class="subtitle">Liquid glass • Gradient biru gelap • Sinkron otomatis</div>
           </div>
         </div>
         <div>
@@ -172,6 +178,14 @@
     </div>
   </div>
 
+  <!-- Loading overlay -->
+  <div class="loader" id="loader">
+    <div class="box">
+      <img src="assets/logo.webp" class="logo" alt="Loading">
+      <div class="txt" id="loaderText">Menyimpan…</div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script>
@@ -179,6 +193,12 @@
     const LS_KEY = 'attendance_api_url';
     const $ = id => document.getElementById(id);
     const debug = msg => { const el=$('debug'); if(!el) return; el.textContent = msg || ''; };
+
+    // ===== Loader helpers
+    const loader = document.getElementById('loader');
+    const loaderText = document.getElementById('loaderText');
+    function showLoader(text){ if(loaderText) loaderText.textContent = text || 'Memproses…'; if(loader) loader.style.display='flex'; }
+    function hideLoader(){ if(loader) loader.style.display='none'; }
 
     // ===== Config loader (so users don't need to set API)
     let READ_ONLY_API = false;
@@ -241,12 +261,14 @@
     $('btnConfirmPwd').onclick = async ()=>{
       const url = apiUrl(); if(!url) return alert('Atur URL Web App dulu.');
       try{
+        showLoader('Mereset…');
         const pwd = $('pwdInput').value;
         const res = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'reset', password: pwd }) });
         const data = await res.json();
         if(data.ok){ mp.style.display='none'; alert('Semua data berhasil direset.'); fetchAndRender(true); }
         else{ alert(data.error || 'Gagal reset.'); }
       }catch(e){ alert('Gagal reset: '+e.message); }
+      finally { hideLoader(); }
     };
 
     // ===== Form logic
@@ -316,7 +338,7 @@
       }catch(e){ debug('Gagal memuat: '+e.message); }
     }
 
-    // ===== Submit handler
+    // ===== Submit handler (with loader)
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault(); if(!apiUrl()) return alert('Atur URL Web App dulu.');
       const payload = {
@@ -327,13 +349,20 @@
       if(!payload.nama || !payload.status || (payload.status!=='PARTISIPAN' && !payload.sektor)){
         return alert('Lengkapi semua kolom.');
       }
-      const res = await submitRow(payload);
-      if(res && res.ok){
-        appendRows([res.row]); updateStats();
-        document.getElementById('form').reset(); applySektorRule();
-        setTimeout(()=>fetchAndRender(true), 300);
-      }else{
-        alert((res && res.error) || 'Gagal menyimpan.');
+      try{
+        showLoader('Menyimpan…');
+        const res = await submitRow(payload);
+        if(res && res.ok){
+          appendRows([res.row]); updateStats();
+          document.getElementById('form').reset(); applySektorRule();
+          setTimeout(()=>fetchAndRender(true), 300);
+        }else{
+          alert((res && res.error) || 'Gagal menyimpan.');
+        }
+      } catch(e){
+        alert('Gagal menyimpan: '+e.message);
+      } finally {
+        hideLoader();
       }
     });
 
