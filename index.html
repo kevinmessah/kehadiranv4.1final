@@ -31,7 +31,8 @@
     }
     .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
     .brand{display:flex;align-items:center;gap:12px}
-    .brand img{width:56px;height:56px;object-fit:contain;border-radius:50%;background:#fff9;padding:6px;border:1px solid var(--glass-border)}
+    /* BESARKAN LOGO: setara lingkaran background */
+    .brand img{width:72px;height:72px;object-fit:contain;border-radius:50%;background:#fff9;padding:4px;border:1px solid var(--glass-border)}
     h1{margin:0;font-size:clamp(22px,2.5vw,32px)}
     .subtitle{opacity:.75}
     label{display:block;font-weight:600;margin:14px 0 6px}
@@ -72,6 +73,22 @@
     .loader .logo{width:64px;height:64px;animation:spin 1s linear infinite;object-fit:contain;border-radius:50%;background:#fff;padding:6px;border:1px solid rgba(0,0,0,.06)}
     .loader .txt{font-weight:700;color:#1e3a8a}
     @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+    /* ===== API BADGE SIMPLE (ikon saja) ===== */
+    .badge.icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:0;font-size:0}
+    .badge.icon.ok{background:#dcfce7;border-color:#86efac}
+    .badge.icon.ok::after{content:'\2713';font-size:16px;line-height:1}
+    .badge.icon.error{background:#fee2e2;border-color:#fecaca}
+    .badge.icon.error::after{content:'!';font-size:16px;line-height:1}
+
+    /* ===== Mobile polish ===== */
+    @media(max-width:600px){
+      body{padding:16px}
+      .toolbar{flex-direction:column;align-items:flex-start;gap:10px}
+      .actions{flex-direction:column}
+      .actions .btn{width:100%}
+      .table-wrap{max-height:56vh}
+    }
   </style>
 </head>
 <body>
@@ -85,7 +102,8 @@
           </div>
         </div>
         <div>
-          <span id="apiBadge" class="badge">API belum diatur</span>
+          <!-- API badge menjadi ikon sederhana -->
+          <span id="apiBadge" class="badge icon error" title="API belum diatur"></span>
           <button class="btn" id="btnSettings">⚙️</button>
         </div>
       </div>
@@ -144,7 +162,7 @@
       <div class="stats" id="stats"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Timestamp (WIB)</th><th>Nama</th><th>Status</th><th>Sektor</th></tr></thead>
+          <thead><tr><th>Timestamp (WITA)</th><th>Nama</th><th>Status</th><th>Sektor</th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
@@ -207,17 +225,21 @@
       localStorage.setItem(LS_KEY, url);
       updateBadge(source);
     }
+    // === SIMPLE BADGE: ikon centang/seru saja
     function updateBadge(source){
       const badge = $('apiBadge');
       const url = apiUrl();
+      if(!badge) return;
+      badge.classList.add('icon');
       if(url){
-        const short = url.replace(/^https?:\/\//,'').slice(0,30)+(url.length>30?'…':'');
-        const srcNote = (READ_ONLY_API ? ' (config)' : (source==='query' ? ' (url)' : ''));
-        badge.textContent = 'API aktif: '+short+srcNote;
         badge.classList.remove('error');
+        badge.classList.add('ok');
+        badge.title='API aktif';
         if(READ_ONLY_API){ const btn=document.getElementById('btnSettings'); if(btn) btn.style.display='none'; }
       } else {
-        badge.textContent='API belum diatur'; badge.classList.add('error');
+        badge.classList.add('error');
+        badge.classList.remove('ok');
+        badge.title='API belum diatur';
       }
     }
     async function loadConfig(){
@@ -300,16 +322,23 @@
       return res.json();
     }
 
+    // ===== WITA formatter (HH:MM)
+    function toWITA(val){
+      const d = new Date(val);
+      if(!isNaN(d)) return d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Makassar'});
+      return val; // jika bukan tanggal valid, tampilkan apa adanya
+    }
+
     // ===== Render
-    const tbody = $('tbody');
-    const stats = $('stats');
-    const lastSync = $('lastSync');
+    const tbody = document.getElementById('tbody');
+    const stats = document.getElementById('stats');
+    const lastSync = document.getElementById('lastSync');
 
     function clearTable(){ tbody.innerHTML=''; }
     function appendRows(rows){
       for(const r of rows){
         const tr=document.createElement('tr');
-        tr.innerHTML = `<td>${r.timestamp||''}</td><td>${r.nama||''}</td><td>${r.status||''}</td><td>${r.sektor||''}</td>`;
+        tr.innerHTML = `<td>${toWITA(r.timestamp||'')}</td><td>${r.nama||''}</td><td>${r.status||''}</td><td>${r.sektor||''}</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -326,7 +355,8 @@
         <span class="pill">Katekumen: <b>${c['KATEKUMEN']}</b></span>
         <span class="pill">Sidi Jemaat: <b>${c['SIDI JEMAAT']}</b></span>
         <span class="pill">Partisipan: <b>${c['PARTISIPAN']}</b></span>`;
-      lastSync.textContent = new Date().toLocaleTimeString('id-ID');
+      // Tampilkan waktu sinkronisasi sebagai WITA HH:MM
+      lastSync.textContent = toWITA(Date.now());
       window.__rowsCache = rows;
     }
 
@@ -368,13 +398,13 @@
 
     document.getElementById('btnRefresh').onclick = ()=>fetchAndRender();
 
-    // ===== Export Excel
+    // ===== Export Excel (ubah label WIB -> WITA saja)
     document.getElementById('btnExport').onclick = async ()=>{
       const rows = window.__rowsCache || [];
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Kehadiran');
       ws.columns = [
-        { header:'Timestamp (WIB)', key:'timestamp', width:22 },
+        { header:'Timestamp (WITA)', key:'timestamp', width:22 },
         { header:'Nama Lengkap', key:'nama', width:28 },
         { header:'Status Jemaat', key:'status', width:18 },
         { header:'Nama Sektor', key:'sektor', width:18 },
@@ -400,6 +430,7 @@
 
     // ===== Init
     loadConfig().then(()=>{
+      updateBadge();
       fetchAndRender(true);
       setInterval(fetchAndRender, 7000);
     });
