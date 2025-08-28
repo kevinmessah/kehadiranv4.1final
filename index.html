@@ -72,7 +72,17 @@
     .loader .logo{width:64px;height:64px;animation:spin 1s linear infinite;object-fit:contain;border-radius:50%;background:#fff;padding:6px;border:1px solid rgba(0,0,0,.06)}
     .loader .txt{font-weight:700;color:#1e3a8a}
     @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-  </style>
+  
+/* override: smaller blue semi-transparent API badge */
+.badge.icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:999px;padding:0;font-size:0;
+  background:rgba(59,130,246,.25); /* blue-500 @ 25% */
+  border:1px solid rgba(59,130,246,.35);
+}
+.badge.icon.ok::after{content:'\2713';font-size:12px;line-height:1;color:#1e40af}
+.badge.icon.error::after{content:'!';font-size:12px;line-height:1;color:#1e40af}
+
+</style>
 </head>
 <body>
   <div class="container">
@@ -85,7 +95,7 @@
           </div>
         </div>
         <div>
-          <span id="apiBadge" class="badge">API belum diatur</span>
+          <span id="apiBadge" class="badge icon">API belum diatur</span>
           <button class="btn" id="btnSettings">⚙️</button>
         </div>
       </div>
@@ -144,7 +154,7 @@
       <div class="stats" id="stats"></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Timestamp (WIB)</th><th>Nama</th><th>Status</th><th>Sektor</th></tr></thead>
+          <thead><tr><th>Timestamp (WITA)</th><th>Nama</th><th>Status</th><th>Sektor</th></tr></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
@@ -300,14 +310,6 @@
       return res.json();
     }
 
-    
-    // Unified WITA formatter (same as lastSync)
-    function toWITA(val){
-      const d = new Date(val);
-      if(!isNaN(d)) return d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Makassar'});
-      return val;
-    }
-
     // ===== Render
     const tbody = $('tbody');
     const stats = $('stats');
@@ -317,7 +319,7 @@
     function appendRows(rows){
       for(const r of rows){
         const tr=document.createElement('tr');
-        tr.innerHTML = `<td>${toWITA(r.timestamp||'')}</td><td>${r.nama||''}</td><td>${r.status||''}</td><td>${r.sektor||''}</td>`;
+        tr.innerHTML = `<td>${r.timestamp||''}</td><td>${r.nama||''}</td><td>${r.status||''}</td><td>${r.sektor||''}</td>`;
         tbody.appendChild(tr);
       }
     }
@@ -334,7 +336,7 @@
         <span class="pill">Katekumen: <b>${c['KATEKUMEN']}</b></span>
         <span class="pill">Sidi Jemaat: <b>${c['SIDI JEMAAT']}</b></span>
         <span class="pill">Partisipan: <b>${c['PARTISIPAN']}</b></span>`;
-      lastSync.textContent = toWITA(Date.now());
+      lastSync.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Makassar'});
       window.__rowsCache = rows;
     }
 
@@ -382,7 +384,7 @@
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Kehadiran');
       ws.columns = [
-        { header:'Timestamp (WIB)', key:'timestamp', width:22 },
+        { header:'Timestamp (WITA)', key:'timestamp', width:22 },
         { header:'Nama Lengkap', key:'nama', width:28 },
         { header:'Status Jemaat', key:'status', width:18 },
         { header:'Nama Sektor', key:'sektor', width:18 },
