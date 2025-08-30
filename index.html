@@ -82,6 +82,8 @@
 .badge.icon.ok::after{content:'\2713';font-size:12px;line-height:1;color:#1e40af}
 .badge.icon.error::after{content:'!';font-size:12px;line-height:1;color:#1e40af}
 
+
+  select:disabled{opacity:.55; cursor:not-allowed; filter:saturate(.6)}
 </style>
 </head>
 <body>
@@ -102,7 +104,7 @@
 
       <form id="form" autocomplete="off">
         <label for="nama">Nama Lengkap *</label>
-        <input id="nama" required placeholder="contoh: Kevin Wang">
+        <input id="nama" required placeholder="Pliss tulis nama asli supaya gampang didata">
 
         <div class="row">
           <div>
@@ -377,19 +379,82 @@
     });
 
     document.getElementById('btnRefresh').onclick = ()=>fetchAndRender();
-
     // ===== Export Excel
     document.getElementById('btnExport').onclick = async ()=>{
-      const rows = window.__rowsCache || [];
+      const rows = (window.__rowsCache || []).map(r => ({
+        timestamp: r.timestamp || '',
+        nama: r.nama || '',
+        status: r.status || '',
+        sektor: r.sektor || ''
+      }));
+
+      if(!rows.length){
+        alert('Tidak ada data untuk diexport.');
+        return;
+      }
+
+      // Sort by sektor then nama for neatness
+      const all = rows.slice().sort((a,b)=>{
+        const as = (a.sektor || 'ZZZ').localeCompare(b.sektor || 'ZZZ');
+        if(as !== 0) return as;
+        return (a.nama || '').localeCompare(b.nama || '');
+      });
+
       const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet('Kehadiran');
-      ws.columns = [
+
+      // --- Sheet: Kehadiran (Semua)
+      const wsAll = wb.addWorksheet('Kehadiran');
+      wsAll.columns = [
         { header:'Timestamp (WITA)', key:'timestamp', width:22 },
         { header:'Nama Lengkap', key:'nama', width:28 },
         { header:'Status Jemaat', key:'status', width:18 },
         { header:'Nama Sektor', key:'sektor', width:18 },
       ];
-      ws.getRow(1).font={bold:true}; ws.views=[{state:'frozen',ySplit:1}]; ws.autoFilter='A1:D1';
+      wsAll.getRow(1).font = { bold:true };
+      wsAll.views = [{ state:'frozen', ySplit:1 }];
+      wsAll.autoFilter = 'A1:D1';
+      all.forEach(r=> wsAll.addRow(r));
+
+      // --- Group by sektor
+      const sectorGroups = all.reduce((acc, r)=>{
+        const key = r.sektor && r.sektor.trim() ? r.sektor.trim() : 'TANPA SEKTOR';
+        (acc[key] = acc[key] || []).push(r);
+        return acc;
+      }, {});
+
+      // --- Create one sheet per sektor
+      Object.entries(sectorGroups).forEach(([sector, list])=>{
+        const sheetName = String(sector).slice(0,31); // Excel sheet name limit
+        const ws = wb.addWorksheet(sheetName);
+        ws.columns = [
+          { header:'Timestamp (WITA)', key:'timestamp', width:22 },
+          { header:'Nama Lengkap', key:'nama', width:28 },
+          { header:'Status Jemaat', key:'status', width:18 },
+        ];
+        ws.getRow(1).font = { bold:true };
+        ws.views = [{ state:'frozen', ySplit:1 }];
+        ws.autoFilter = 'A1:C1';
+        list.forEach(r=> ws.addRow({ timestamp:r.timestamp, nama:r.nama, status:r.status }));
+      });
+
+      // --- Summary sheet
+      const totalsStatus = all.reduce((a,r)=>{ a[r.status]=(a[r.status]||0)+1; return a; }, {});
+      const wsSum = wb.addWorksheet('Ringkasan');
+      wsSum.addRow(['Ringkasan Kehadiran']).font = { bold:true, size:13 };
+      wsSum.addRow(['Total Hadir', all.length]);
+      wsSum.addRow([]);
+      wsSum.addRow(['By Status']).font = { bold:true };
+      Object.entries(totalsStatus).forEach(([k,v])=> wsSum.addRow([k, v]));
+      wsSum.addRow([]);
+      wsSum.addRow(['By Sektor']).font = { bold:true };
+      Object.entries(sectorGroups).sort(([a],[b])=> a.localeCompare(b)).forEach(([sec, list])=> wsSum.addRow([sec, list.length]));
+      wsSum.columns = [{ width:24 }, { width:16 }];
+
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Kehadiran_GP_per_sektor.xlsx');
+    };
+
+ws.views=[{state:'frozen',ySplit:1}]; ws.autoFilter='A1:D1';
       rows.forEach(r=>ws.addRow(r));
       const totals = rows.reduce((a,r)=>{ a.total++; a[r.status]=(a[r.status]||0)+1; return a; }, { total:0 });
       ws.addRow([]);
@@ -414,5 +479,26 @@
       setInterval(fetchAndRender, 7000);
     });
   </script>
+
+<script>
+  (function(){
+    function updateSektorDisabled(){
+      var statusEl = document.getElementById('status');
+      var sektorEl = document.getElementById('sektor');
+      if(!statusEl || !sektorEl) return;
+      var val = String(statusEl.value || '');
+      var isPart = val.toLowerCase() === 'partisipan';
+      sektorEl.disabled = isPart;
+      if(isPart){ sektorEl.value = ''; }
+    }
+    document.addEventListener('DOMContentLoaded', updateSektorDisabled);
+    document.addEventListener('change', function(e){
+      if(e.target && e.target.id === 'status'){ updateSektorDisabled(); }
+    });
+    // In case scripts change the value programmatically:
+    setInterval(updateSektorDisabled, 800);
+  })();
+</script>
+
 </body>
 </html>
