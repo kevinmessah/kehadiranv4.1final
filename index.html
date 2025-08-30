@@ -102,7 +102,7 @@
 
       <form id="form" autocomplete="off">
         <label for="nama">Nama Lengkap *</label>
-        <input id="nama" required placeholder="contoh: Kevin Wang">
+        <input id="nama" required placeholder="Pliss gunakan nama asli supaya mudah didata">
 
         <div class="row">
           <div>
@@ -404,6 +404,48 @@
       s.addRow(['Sidi Jemaat', totals['SIDI JEMAAT']||0]);
       s.addRow(['Partisipan', totals['PARTISIPAN']||0]);
       s.columns=[{width:24},{width:16}];
+      // ========== Per Sektor (pengelompokan per sektor) ==========
+      try {
+        const sectorList = ['ANTIOKHIA','BETLEHEM','CORINTHIANS','DAMSYIK','EFRATA','FILIPI','GALILEA','HERMON'];
+        // Kelompokkan baris per sektor; untuk Partisipan (tanpa sektor) dikelompokkan terpisah
+        const grouped = {};
+        (rows || []).forEach(r => {
+          const key = (r.status === 'PARTISIPAN' || !r.sektor) ? 'PARTISIPAN' : r.sektor;
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push(r);
+        });
+        const ws2 = wb.addWorksheet('Per Sektor');
+        ws2.columns = [
+          { header:'No', key:'no', width:6 },
+          { header:'Nama Lengkap', key:'nama', width:28 },
+          { header:'Status Jemaat', key:'status', width:18 },
+          { header:'Timestamp (WITA)', key:'timestamp', width:22 },
+        ];
+        let rowIndex = 1;
+        // Tulis setiap sektor sesuai urutan yang ada, lalu tambahkan PARTISIPAN di akhir
+        const orderedKeys = [...sectorList, 'PARTISIPAN'].filter(k => grouped[k] && grouped[k].length);
+        orderedKeys.forEach(sec => {
+          // Judul blok sektor
+          ws2.mergeCells(`A${rowIndex}:D${rowIndex}`);
+          ws2.getCell(`A${rowIndex}`).value = `SEKTOR: ${sec}`;
+          ws2.getCell(`A${rowIndex}`).font = { bold:true, size:13 };
+          rowIndex += 1;
+          // Header kolom untuk blok ini
+          ws2.getRow(rowIndex).values = ['No','Nama Lengkap','Status Jemaat','Timestamp (WITA)'];
+          ws2.getRow(rowIndex).font = { bold:true };
+          // Data
+          const list = grouped[sec] || [];
+          list.forEach((r, i) => {
+            rowIndex += 1;
+            ws2.getRow(rowIndex).values = [i+1, r.nama || '', r.status || '', r.timestamp || ''];
+          });
+          rowIndex += 2; // spasi antar blok sektor
+        });
+      } catch(e) {
+        // Jika terjadi error saat membuat sheet Per Sektor, tetap lanjutkan ekspor tanpa menggagalkan proses
+        console.warn('Gagal membuat sheet Per Sektor:', e);
+      }
+    
       const buf = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Kehadiran_GP.xlsx');
     };
