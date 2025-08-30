@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DAFTAR KEHADIRAN GERAKAN PEMUDA</title>
+  <title>DAFTAR KEHADIRAN GERAKAN PEMUDA — Upgraded</title>
+  <!-- Charts & Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     :root{
       --bg1:#0a45a6;
       --bg2:#082a80;
       --glass-border: rgba(255,255,255,0.22);
+      --ink:#0f172a;
+      --muted:#64748b;
+      --ok:#16a34a;
+      --warn:#b91c1c;
+      --blue:#1d4ed8;
     }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:#0f172a}
+    html,body{height:100%;margin:0;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;color:var(--ink)}
     body{
       background:
         radial-gradient(1000px 700px at 10% -10%, #5cc8ff44, transparent 45%),
@@ -19,7 +27,7 @@
         linear-gradient(120deg, var(--bg1), var(--bg2));
       min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:26px;
     }
-    .container{ width:min(1100px,100%); display:grid; grid-template-columns:1.1fr 1.6fr; gap:20px }
+    .container{ width:min(1200px,100%); display:grid; grid-template-columns:1.05fr 1.75fr; gap:20px }
     .card{
       background: linear-gradient(145deg, rgba(255,255,255,0.52), rgba(255,255,255,0.26));
       border:1px solid var(--glass-border);
@@ -29,7 +37,7 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.65);
       padding:20px;
     }
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
     .brand{display:flex;align-items:center;gap:12px}
     .brand img{width:56px;height:56px;object-fit:contain;border-radius:50%;background:#fff9;padding:6px;border:1px solid var(--glass-border)}
     h1{margin:0;font-size:clamp(22px,2.5vw,32px)}
@@ -46,52 +54,79 @@
     .btn{padding:12px 16px;border-radius:14px;border:1px solid var(--glass-border);background:#fff;font-weight:700;cursor:pointer}
     .btn.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8);color:#fff;border-color:#1e40af}
     .btn.warn{background:linear-gradient(180deg,#ef4444,#b91c1c);color:#fff;border-color:#7f1d1d}
+    .btn.ghost{background:transparent}
     .badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#dcfce7;border:1px solid #86efac}
     .badge.error{background:#fee2e2;border-color:#fecaca}
     .note{background:#fff8;border:1px dashed var(--glass-border);border-radius:14px;padding:12px;font-size:14px;margin-top:8px}
     .stats{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
     .pill{display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--glass-border);border-radius:999px;padding:8px 12px}
-    .table-wrap{max-height:64vh;overflow:auto}
+    .table-wrap{max-height:56vh;overflow:auto}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    thead th{text-align:left;padding:10px 12px;font-size:13px;opacity:.8}
+    thead th{text-align:left;padding:10px 12px;font-size:13px;opacity:.8;position:sticky;top:0;background:rgba(255,255,255,.9);backdrop-filter:blur(6px)}
     tbody tr{background:#fff;border:1px solid var(--glass-border);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.06)}
     tbody td{padding:12px;border-top:1px solid var(--glass-border)}
     tbody tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
     tbody tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
+
+    /* Filter bar */
+    .filters{display:grid;grid-template-columns:1.2fr .9fr .9fr auto;gap:10px;margin:10px 0 6px}
+    .filters .btn{white-space:nowrap}
+
+    /* Charts */
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+    .chart-card{background:#fff;border:1px solid var(--glass-border);border-radius:16px;padding:10px}
+    .chart-card h4{margin:0 0 6px;font-size:14px;color:#334155}
+
     /* Modal */
-    .modal{position:fixed;inset:0;background:rgba(2,6,23,.5);display:none;align-items:center;justify-content:center;padding:18px}
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:60}
     .panel{width:min(460px,96%);background:#fff;border-radius:16px;padding:16px;border:1px solid #e2e8f0}
     .panel h3{margin:0 0 10px}
     .footer{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
     .debug{margin-top:8px;font-size:12px;color:#334155}
-    @media(max-width:900px){.container{grid-template-columns:1fr}}
 
     /* Loader overlay */
-    .loader{position:fixed;inset:0;background:rgba(29,78,216,.20);display:none;align-items:center;justify-content:center;z-index:9999}
+    .loader{position:fixed;inset:0;background:rgba(29,78,216,.20);display:none;align-items:center;justify-content:center;z-index:70}
     .loader .box{display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:18px 22px;border-radius:16px;box-shadow:0 20px 50px rgba(2,6,23,.25)}
     .loader .logo{width:64px;height:64px;animation:spin 1s linear infinite;object-fit:contain;border-radius:50%;background:#fff;padding:6px;border:1px solid rgba(0,0,0,.06)}
     .loader .txt{font-weight:700;color:#1e3a8a}
     @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-  
-/* override: smaller blue semi-transparent API badge */
-.badge.icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
-  border-radius:999px;padding:0;font-size:0;
-  background:rgba(59,130,246,.25); /* blue-500 @ 25% */
-  border:1px solid rgba(59,130,246,.35);
-}
-.badge.icon.ok::after{content:'\2713';font-size:12px;line-height:1;color:#1e40af}
-.badge.icon.error::after{content:'!';font-size:12px;line-height:1;color:#1e40af}
 
-</style>
+    /* API badge small blue icon */
+    .badge.icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+      border-radius:999px;padding:0;font-size:0;
+      background:rgba(59,130,246,.25);
+      border:1px solid rgba(59,130,246,.35);
+    }
+    .badge.icon.ok::after{content:'\2713';font-size:12px;line-height:1;color:#1e40af}
+    .badge.icon.error::after{content:'!';font-size:12px;line-height:1;color:#1e40af}
+
+    /* Toasts */
+    .toasts{position:fixed;right:16px;top:16px;display:flex;flex-direction:column;gap:10px;z-index:80}
+    .toast{display:flex;align-items:flex-start;gap:10px;min-width:260px;max-width:360px;background:#fff;border:1px solid #e2e8f0;padding:12px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);animation:slideIn .25s ease}
+    .toast .title{font-weight:700}
+    .toast .msg{font-size:14px;color:#334155}
+    .toast.ok{border-color:#bbf7d0}
+    .toast.ok .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);margin-top:6px}
+    .toast.warn{border-color:#fecaca}
+    .toast.warn .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);margin-top:6px}
+    .toast.info{border-color:#bfdbfe}
+    .toast.info .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:6px}
+    .toast .close{margin-left:auto;cursor:pointer;border:none;background:transparent;font-size:18px;line-height:1}
+    @keyframes slideIn{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+    @media(max-width:1024px){.container{grid-template-columns:1fr}.charts{grid-template-columns:1fr}.table-wrap{max-height:48vh}}
+  </style>
 </head>
 <body>
   <div class="container">
+    <!-- FORM CARD -->
     <section class="card">
       <div class="toolbar">
         <div class="brand">
           <img src="assets/logo.webp" alt="Logo GP">
           <div>
             <h1>DAFTAR KEHADIRAN GERAKAN PEMUDA</h1>
+            <div class="subtitle">Versi Upgraded • Confetti • Toast • Filter • Charts</div>
           </div>
         </div>
         <div>
@@ -106,7 +141,7 @@
 
         <div class="row">
           <div>
-            <label for="status">Status Jemaat *</label>
+            <label for="status">Status Jemaat *</nlabel>
             <select id="status" required>
               <option value="" disabled selected>Pilih status...</option>
               <option value="KATEKUMEN">KATEKUMEN</option>
@@ -143,15 +178,57 @@
       </form>
     </section>
 
+    <!-- DATA CARD -->
     <section class="card">
       <div class="toolbar">
         <div><b>Data Kehadiran</b> • <span id="lastSync" class="subtitle"></span></div>
-        <div>
+        <div class="actions">
           <button class="btn" id="btnRefresh">Refresh</button>
           <button class="btn" id="btnExport">Export Excel</button>
+          <button class="btn" id="btnExportFiltered" title="Export data yang terfilter">Export (Filtered)</button>
         </div>
       </div>
+
+      <!-- FILTERS -->
+      <div class="filters">
+        <input id="searchName" placeholder="🔎 Cari nama… (ketik sebagian)">
+        <select id="filterStatus">
+          <option value="">Status: Semua</option>
+          <option value="KATEKUMEN">Katekumen</option>
+          <option value="SIDI JEMAAT">Sidi Jemaat</option>
+          <option value="PARTISIPAN">Partisipan</option>
+        </select>
+        <select id="filterSektor">
+          <option value="">Sektor: Semua</option>
+          <option>ANTIOKHIA</option>
+          <option>BETLEHEM</option>
+          <option>CORINTHIANS</option>
+          <option>DAMSYIK</option>
+          <option>EFRATA</option>
+          <option>FILIPI</option>
+          <option>GALILEA</option>
+          <option>HERMON</option>
+          <option>— KOSONG / PARTISIPAN —</option>
+        </select>
+        <button class="btn ghost" id="btnClearFilters">Bersihkan</button>
+      </div>
+
+      <!-- STATS -->
       <div class="stats" id="stats"></div>
+
+      <!-- CHARTS -->
+      <div class="charts">
+        <div class="chart-card">
+          <h4>Komposisi Status (view terfilter)</h4>
+          <canvas id="chartStatus" height="150"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Per Sektor (view terfilter)</h4>
+          <canvas id="chartSektor" height="150"></canvas>
+        </div>
+      </div>
+
+      <!-- TABLE -->
       <div class="table-wrap">
         <table>
           <thead><tr><th>Timestamp (WITA)</th><th>Nama</th><th>Status</th><th>Sektor</th></tr></thead>
@@ -196,17 +273,34 @@
     </div>
   </div>
 
+  <!-- Toast container -->
+  <div class="toasts" id="toasts"></div>
+
+  <!-- Libs for Excel export -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
   <script>
     // ===== Utilities
     const LS_KEY = 'attendance_api_url';
     const $ = id => document.getElementById(id);
-    const debug = msg => { const el=$('debug'); if(!el) return; el.textContent = msg || ''; };
+    const qs = (sel, el=document) => el.querySelector(sel);
+
+    // ===== Toast helpers
+    function toast(msg, type='info', title){
+      const wrap = $('toasts');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<div class="dot"></div><div><div class="title">${title || (type==='ok'?'Sukses':'Info')}</div><div class="msg">${msg}</div></div><button class="close" aria-label="Tutup">×</button>`;
+      t.querySelector('.close').onclick = ()=> t.remove();
+      wrap.appendChild(t);
+      setTimeout(()=>t.remove(), 4500);
+      return t;
+    }
 
     // ===== Loader helpers
-    const loader = document.getElementById('loader');
-    const loaderText = document.getElementById('loaderText');
+    const loader = $('loader');
+    const loaderText = $('loaderText');
     function showLoader(text){ if(loaderText) loaderText.textContent = text || 'Memproses…'; if(loader) loader.style.display='flex'; }
     function hideLoader(){ if(loader) loader.style.display='none'; }
 
@@ -225,30 +319,17 @@
         const srcNote = (READ_ONLY_API ? ' (config)' : (source==='query' ? ' (url)' : ''));
         badge.textContent = 'API aktif: '+short+srcNote;
         badge.classList.remove('error');
-        if(READ_ONLY_API){ const btn=document.getElementById('btnSettings'); if(btn) btn.style.display='none'; }
+        if(READ_ONLY_API){ const btn=$('btnSettings'); if(btn) btn.style.display='none'; }
       } else {
         badge.textContent='API belum diatur'; badge.classList.add('error');
       }
     }
     async function loadConfig(){
-      // 1) URL param ?api=... overrides (useful for testing)
-      try{
-        const qp = new URLSearchParams(location.search);
-        const qpApi = qp.get('api');
-        if(qpApi){ setApiAndPersist(qpApi, 'query'); return; }
-      }catch(e){}
-
-      // 2) config.json file
+      try{ const qp = new URLSearchParams(location.search); const qpApi = qp.get('api'); if(qpApi){ setApiAndPersist(qpApi, 'query'); return; } }catch(e){}
       try{
         const res = await fetch('config.json', { cache: 'no-store' });
-        if(res.ok){
-          const cfg = await res.json();
-          if(cfg && cfg.api_url){
-            READ_ONLY_API = true;
-            setApiAndPersist(cfg.api_url, 'config');
-          }
-        }
-      }catch(e){ /* ignore if no config */ }
+        if(res.ok){ const cfg = await res.json(); if(cfg && cfg.api_url){ READ_ONLY_API = true; setApiAndPersist(cfg.api_url, 'config'); } }
+      }catch(e){}
     }
 
     function apiUrl(){ return localStorage.getItem(LS_KEY) || ''; }
@@ -258,10 +339,10 @@
     const ms = $('modalSettings');
     $('btnSettings').onclick = ()=>{ $('apiUrlInput').value=apiUrl(); ms.style.display='flex'; };
     $('btnClose').onclick = ()=> ms.style.display='none';
-    $('btnSave').onclick = ()=>{ setApiUrl($('apiUrlInput').value.trim()); ms.style.display='none'; fetchAndRender(); };
+    $('btnSave').onclick = ()=>{ setApiUrl($('apiUrlInput').value.trim()); ms.style.display='none'; fetchAndRender(); toast('URL API tersimpan.', 'ok'); };
     $('btnTest').onclick = async()=>{
       const url = $('apiUrlInput').value.trim() || apiUrl(); if(!url) return alert('Tempel URL Web App dulu.');
-      try{ const r = await fetch(url+'?ping=1'); alert(r.ok?'Koneksi OK ✅':'Gagal: '+r.status); }catch(e){ alert('Gagal: '+e.message); }
+      try{ const r = await fetch(url+'?ping=1'); toast(r.ok?'Koneksi OK ✅':'Gagal: '+r.status, r.ok?'ok':'warn', 'Tes Koneksi'); }catch(e){ toast('Gagal: '+e.message, 'warn', 'Tes Koneksi'); }
     };
 
     // ===== Password modal
@@ -275,9 +356,9 @@
         const pwd = $('pwdInput').value;
         const res = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'reset', password: pwd }) });
         const data = await res.json();
-        if(data.ok){ mp.style.display='none'; alert('Semua data berhasil direset.'); fetchAndRender(true); }
-        else{ alert(data.error || 'Gagal reset.'); }
-      }catch(e){ alert('Gagal reset: '+e.message); }
+        if(data.ok){ mp.style.display='none'; toast('Semua data berhasil direset.', 'ok', 'Reset Berhasil'); fetchAndRender(true); }
+        else{ toast(data.error || 'Gagal reset.', 'warn', 'Reset Gagal'); }
+      }catch(e){ toast('Gagal reset: '+e.message, 'warn', 'Reset Error'); }
       finally { hideLoader(); }
     };
 
@@ -310,10 +391,16 @@
       return res.json();
     }
 
-    // ===== Render
+    // ===== State & Render helpers
     const tbody = $('tbody');
     const stats = $('stats');
     const lastSync = $('lastSync');
+    const searchName = $('searchName');
+    const filterStatus = $('filterStatus');
+    const filterSektor = $('filterSektor');
+
+    let __rowsAll = [];
+    let __rowsView = [];
 
     function clearTable(){ tbody.innerHTML=''; }
     function appendRows(rows){
@@ -323,32 +410,91 @@
         tbody.appendChild(tr);
       }
     }
-    function updateStats(){
-      const rows = Array.from(tbody.querySelectorAll('tr')).map(tr=>{
-        const t=tr.querySelectorAll('td');
-        return {timestamp:t[0].textContent, nama:t[1].textContent, status:t[2].textContent, sektor:t[3].textContent};
-      });
-      const total = rows.length;
-      const c = { 'KATEKUMEN':0, 'SIDI JEMAAT':0, 'PARTISIPAN':0 };
+
+    function computeTotals(rows){
+      const c = { total: rows.length, 'KATEKUMEN':0, 'SIDI JEMAAT':0, 'PARTISIPAN':0 };
       rows.forEach(r=>{ if(c[r.status]!==undefined) c[r.status]++; });
+      return c;
+    }
+
+    function updateStats(rows){
+      const t = computeTotals(rows);
       stats.innerHTML = `
-        <span class="pill">Total Hadir: <b>${total}</b></span>
-        <span class="pill">Katekumen: <b>${c['KATEKUMEN']}</b></span>
-        <span class="pill">Sidi Jemaat: <b>${c['SIDI JEMAAT']}</b></span>
-        <span class="pill">Partisipan: <b>${c['PARTISIPAN']}</b></span>`;
+        <span class="pill">Total (view): <b>${t.total}</b></span>
+        <span class="pill">Katekumen: <b>${t['KATEKUMEN']}</b></span>
+        <span class="pill">Sidi Jemaat: <b>${t['SIDI JEMAAT']}</b></span>
+        <span class="pill">Partisipan: <b>${t['PARTISIPAN']}</b></span>`;
       lastSync.textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Makassar'});
-      window.__rowsCache = rows;
+    }
+
+    // ===== Filters
+    function currentFilters(){
+      return {
+        name: (searchName.value||'').trim().toLowerCase(),
+        status: filterStatus.value,
+        sektor: filterSektor.value === '— KOSONG / PARTISIPAN —' ? '__EMPTY__' : filterSektor.value
+      };
+    }
+    function applyFilters(){
+      const f = currentFilters();
+      __rowsView = (__rowsAll||[]).filter(r=>{
+        const byName = !f.name || String(r.nama||'').toLowerCase().includes(f.name);
+        const byStatus = !f.status || r.status === f.status;
+        const bySektor = !f.sektor || (f.sektor==='__EMPTY__' ? (!r.sektor || r.sektor==='' || r.status==='PARTISIPAN') : r.sektor === f.sektor);
+        return byName && byStatus && bySektor;
+      });
+      clearTable();
+      appendRows(__rowsView);
+      updateStats(__rowsView);
+      updateCharts(__rowsView);
+    }
+
+    $('btnClearFilters').onclick = ()=>{ searchName.value=''; filterStatus.value=''; filterSektor.value=''; applyFilters(); toast('Filter dibersihkan.', 'info'); };
+    searchName.addEventListener('input', ()=>{ applyFilters(); });
+    filterStatus.addEventListener('change', applyFilters);
+    filterSektor.addEventListener('change', applyFilters);
+
+    // ===== Charts
+    let chartStatus, chartSektor;
+    function ensureCharts(){
+      if(!chartStatus){
+        chartStatus = new Chart($('#chartStatus'), {
+          type: 'doughnut',
+          data: { labels:['KATEKUMEN','SIDI JEMAAT','PARTISIPAN'], datasets:[{ data:[0,0,0] }] },
+          options: { plugins:{ legend:{ position:'bottom' }}, maintainAspectRatio:false }
+        });
+      }
+      if(!chartSektor){
+        chartSektor = new Chart($('#chartSektor'), {
+          type: 'bar',
+          data: { labels:['ANTIOKHIA','BETLEHEM','CORINTHIANS','DAMSYIK','EFRATA','FILIPI','GALILEA','HERMON','(Kosong/Partisipan)'], datasets:[{ label:'Jumlah', data:[0,0,0,0,0,0,0,0,0] }] },
+          options: { plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }, maintainAspectRatio:false }
+        });
+      }
+    }
+    function updateCharts(rows){
+      ensureCharts();
+      const total = computeTotals(rows);
+      chartStatus.data.datasets[0].data = [total['KATEKUMEN'], total['SIDI JEMAAT'], total['PARTISIPAN']];
+      chartStatus.update();
+      // sektor counts
+      const sectors = ['ANTIOKHIA','BETLEHEM','CORINTHIANS','DAMSYIK','EFRATA','FILIPI','GALILEA','HERMON'];
+      const counts = sectors.map(sec=> rows.filter(r=> (r.sektor===sec)).length);
+      const empty = rows.filter(r=> (!r.sektor || r.sektor==='' || r.status==='PARTISIPAN')).length;
+      chartSektor.data.datasets[0].data = [...counts, empty];
+      chartSektor.update();
     }
 
     async function fetchAndRender(silent=false){
       try{
         const rows = await getRows();
-        clearTable(); appendRows(rows); updateStats();
-        if(!silent) debug('Data tersinkron.');
-      }catch(e){ debug('Gagal memuat: '+e.message); }
+        __rowsAll = rows.map(r=>({ timestamp:r.timestamp||'', nama:r.nama||r.Nama||'', status:r.status||r.Status||'', sektor:r.sektor||r.Sektor||'' }));
+        applyFilters();
+        if(!silent) { $('debug').textContent = 'Data tersinkron.'; }
+      }catch(e){ $('debug').textContent = 'Gagal memuat: '+e.message; toast('Gagal memuat: '+e.message, 'warn'); }
     }
 
-    // ===== Submit handler (with loader)
+    // ===== Submit handler (with loader + confetti + toast)
     document.getElementById('form').addEventListener('submit', async (e)=>{
       e.preventDefault(); if(!apiUrl()) return alert('Atur URL Web App dulu.');
       const payload = {
@@ -357,30 +503,34 @@
         sektor: statusSel.value==='PARTISIPAN' ? '' : sektorSel.value
       };
       if(!payload.nama || !payload.status || (payload.status!=='PARTISIPAN' && !payload.sektor)){
-        return alert('Lengkapi semua kolom.');
+        return toast('Lengkapi semua kolom.', 'warn', 'Form belum lengkap');
       }
       try{
         showLoader('Menyimpan…');
         const res = await submitRow(payload);
         if(res && res.ok){
-          appendRows([res.row]); updateStats();
+          // Optimistic UI
+          __rowsAll.unshift(res.row);
+          applyFilters();
           document.getElementById('form').reset(); applySektorRule();
+          // Confetti celebration
+          confetti({ particleCount: 120, spread: 70, origin: { y: 0.12 } });
+          toast('Kehadiran tersimpan! Terima kasih 🙌', 'ok', 'Tersimpan');
           setTimeout(()=>fetchAndRender(true), 300);
         }else{
-          alert((res && res.error) || 'Gagal menyimpan.');
+          toast((res && res.error) || 'Gagal menyimpan.', 'warn', 'Gagal');
         }
       } catch(e){
-        alert('Gagal menyimpan: '+e.message);
+        toast('Gagal menyimpan: '+e.message, 'warn', 'Error');
       } finally {
         hideLoader();
       }
     });
 
-    document.getElementById('btnRefresh').onclick = ()=>fetchAndRender();
+    document.getElementById('btnRefresh').onclick = ()=>{ fetchAndRender(); toast('Data diperbarui.', 'info'); };
 
-    // ===== Export Excel
-    document.getElementById('btnExport').onclick = async ()=>{
-      const rows = window.__rowsCache || [];
+    // ===== Export Excel (All & Filtered)
+    async function exportToExcel(rows, filename='Kehadiran_GP.xlsx'){
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Kehadiran');
       ws.columns = [
@@ -390,7 +540,7 @@
         { header:'Nama Sektor', key:'sektor', width:18 },
       ];
       ws.getRow(1).font={bold:true}; ws.views=[{state:'frozen',ySplit:1}]; ws.autoFilter='A1:D1';
-      rows.forEach(r=>ws.addRow(r));
+      (rows||[]).forEach(r=>ws.addRow(r));
       const totals = rows.reduce((a,r)=>{ a.total++; a[r.status]=(a[r.status]||0)+1; return a; }, { total:0 });
       ws.addRow([]);
       ws.addRow(['','','Total Hadir', totals.total||0]).font={bold:true};
@@ -404,10 +554,9 @@
       s.addRow(['Sidi Jemaat', totals['SIDI JEMAAT']||0]);
       s.addRow(['Partisipan', totals['PARTISIPAN']||0]);
       s.columns=[{width:24},{width:16}];
-      // ========== Per Sektor (pengelompokan per sektor) ==========
+      // Per Sektor
       try {
         const sectorList = ['ANTIOKHIA','BETLEHEM','CORINTHIANS','DAMSYIK','EFRATA','FILIPI','GALILEA','HERMON'];
-        // Kelompokkan baris per sektor; untuk Partisipan (tanpa sektor) dikelompokkan terpisah
         const grouped = {};
         (rows || []).forEach(r => {
           const key = (r.status === 'PARTISIPAN' || !r.sektor) ? 'PARTISIPAN' : r.sektor;
@@ -415,45 +564,35 @@
           grouped[key].push(r);
         });
         const ws2 = wb.addWorksheet('Per Sektor');
-        ws2.columns = [
-          { header:'No', key:'no', width:6 },
-          { header:'Nama Lengkap', key:'nama', width:28 },
-          { header:'Status Jemaat', key:'status', width:18 },
-          { header:'Timestamp (WITA)', key:'timestamp', width:22 },
-        ];
+        ws2.columns = [ { header:'No', key:'no', width:6 }, { header:'Nama Lengkap', key:'nama', width:28 }, { header:'Status Jemaat', key:'status', width:18 }, { header:'Timestamp (WITA)', key:'timestamp', width:22 } ];
         let rowIndex = 1;
-        // Tulis setiap sektor sesuai urutan yang ada, lalu tambahkan PARTISIPAN di akhir
         const orderedKeys = [...sectorList, 'PARTISIPAN'].filter(k => grouped[k] && grouped[k].length);
         orderedKeys.forEach(sec => {
-          // Judul blok sektor
           ws2.mergeCells(`A${rowIndex}:D${rowIndex}`);
           ws2.getCell(`A${rowIndex}`).value = `SEKTOR: ${sec}`;
           ws2.getCell(`A${rowIndex}`).font = { bold:true, size:13 };
           rowIndex += 1;
-          // Header kolom untuk blok ini
           ws2.getRow(rowIndex).values = ['No','Nama Lengkap','Status Jemaat','Timestamp (WITA)'];
           ws2.getRow(rowIndex).font = { bold:true };
-          // Data
           const list = grouped[sec] || [];
-          list.forEach((r, i) => {
-            rowIndex += 1;
-            ws2.getRow(rowIndex).values = [i+1, r.nama || '', r.status || '', r.timestamp || ''];
-          });
-          rowIndex += 2; // spasi antar blok sektor
+          list.forEach((r, i) => { rowIndex += 1; ws2.getRow(rowIndex).values = [i+1, r.nama || '', r.status || '', r.timestamp || '']; });
+          rowIndex += 2;
         });
-      } catch(e) {
-        // Jika terjadi error saat membuat sheet Per Sektor, tetap lanjutkan ekspor tanpa menggagalkan proses
-        console.warn('Gagal membuat sheet Per Sektor:', e);
-      }
-    
+      } catch(e) { console.warn('Gagal membuat sheet Per Sektor:', e); }
+
       const buf = await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), 'Kehadiran_GP.xlsx');
-    };
+      saveAs(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), filename);
+    }
+
+    $('btnExport').onclick = ()=> exportToExcel(__rowsAll, 'Kehadiran_GP.xlsx');
+    $('btnExportFiltered').onclick = ()=> exportToExcel(__rowsView, 'Kehadiran_GP_Filtered.xlsx');
 
     // ===== Init
     loadConfig().then(()=>{
       fetchAndRender(true);
       setInterval(fetchAndRender, 7000);
+      ensureCharts();
+      toast('Siap! Gunakan filter di atas tabel, lihat chart live, dan rayakan setiap submit 🎉', 'info', 'Versi Upgraded');
     });
   </script>
 </body>
